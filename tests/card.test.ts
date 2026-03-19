@@ -57,4 +57,55 @@ describe("AgentCard", () => {
     const d = agentCardToDict(card);
     expect(d.agentanycast).toBeUndefined();
   });
+
+  it("serializes v0.5 identity fields", () => {
+    const card: AgentCard = {
+      name: "IdentityAgent",
+      skills: [],
+      peerId: "12D3KooWTest",
+      didKey: "did:key:zTest",
+      didWeb: "did:web:example.com:agents:myagent",
+      didDns: "did:dns:example.com",
+      verifiableCredentials: ['{"type": "VerifiableCredential"}'],
+    };
+    const d = agentCardToDict(card);
+    const p2p = d.agentanycast as Record<string, unknown>;
+    expect(p2p.did_web).toBe("did:web:example.com:agents:myagent");
+    expect(p2p.did_dns).toBe("did:dns:example.com");
+    expect(p2p.verifiable_credentials).toEqual(['{"type": "VerifiableCredential"}']);
+  });
+
+  it("round-trips v0.5 identity fields through dict", () => {
+    const card: AgentCard = {
+      name: "RoundTrip",
+      skills: [],
+      peerId: "12D3KooWTest",
+      didWeb: "did:web:example.com",
+      didDns: "did:dns:example.com",
+      verifiableCredentials: ["vc1", "vc2"],
+    };
+    const d = agentCardToDict(card);
+    const restored = agentCardFromDict(d);
+    expect(restored.didWeb).toBe("did:web:example.com");
+    expect(restored.didDns).toBe("did:dns:example.com");
+    expect(restored.verifiableCredentials).toEqual(["vc1", "vc2"]);
+  });
+
+  it("defaults v0.5 identity fields when absent", () => {
+    const card: AgentCard = {
+      name: "Minimal",
+      skills: [],
+      peerId: "12D3KooWTest",
+    };
+    const d = agentCardToDict(card);
+    const p2p = d.agentanycast as Record<string, unknown>;
+    expect(p2p.did_web).toBeUndefined();
+    expect(p2p.did_dns).toBeUndefined();
+    expect(p2p.verifiable_credentials).toBeUndefined();
+
+    const restored = agentCardFromDict(d);
+    expect(restored.didWeb).toBeUndefined();
+    expect(restored.didDns).toBeUndefined();
+    expect(restored.verifiableCredentials).toEqual([]);
+  });
 });

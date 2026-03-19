@@ -22,6 +22,12 @@ export interface AgentCard {
   relayAddresses?: string[];
   /** W3C DID (did:key) derived from the node's Ed25519 public key. */
   didKey?: string;
+  /** Optional did:web identifier for HTTPS-based DID resolution. */
+  didWeb?: string;
+  /** Optional did:dns domain for DNS-based DID resolution. */
+  didDns?: string;
+  /** JSON-encoded Verifiable Credentials associated with this agent. */
+  verifiableCredentials?: string[];
 }
 
 /** Serialize an AgentCard to a plain object (A2A JSON format). */
@@ -45,6 +51,11 @@ export function agentCardToDict(card: AgentCard): Record<string, unknown> {
       relay_addresses: card.relayAddresses ?? [],
     };
     if (card.didKey) p2p.did_key = card.didKey;
+    if (card.didWeb) p2p.did_web = card.didWeb;
+    if (card.didDns) p2p.did_dns = card.didDns;
+    if (card.verifiableCredentials?.length) {
+      p2p.verifiable_credentials = [...card.verifiableCredentials];
+    }
     d.agentanycast = p2p;
   }
   return d;
@@ -69,5 +80,8 @@ export function agentCardFromDict(data: Record<string, unknown>): AgentCard {
     supportedTransports: (p2p.supported_transports as string[]) ?? [],
     relayAddresses: (p2p.relay_addresses as string[]) ?? [],
     didKey: p2p.did_key as string | undefined,
+    didWeb: p2p.did_web as string | undefined,
+    didDns: p2p.did_dns as string | undefined,
+    verifiableCredentials: (p2p.verifiable_credentials as string[]) ?? [],
   };
 }

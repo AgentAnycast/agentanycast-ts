@@ -204,6 +204,9 @@ export function protoCardToSdk(card: ProtoAgentCard): AgentCard {
     supportedTransports: p2p?.supportedTransports ?? [],
     relayAddresses: p2p?.relayAddresses ?? [],
     didKey: p2p?.didKey || undefined,
+    didWeb: p2p?.didWeb || undefined,
+    didDns: p2p?.didDns || undefined,
+    verifiableCredentials: p2p?.verifiableCredentials ?? [],
   };
 }
 

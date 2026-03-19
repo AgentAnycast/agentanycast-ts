@@ -129,3 +129,67 @@ function encodeLibp2pPubkeyProto(pubkey: Uint8Array): Uint8Array {
   result.set(pubkey, 4);
   return result;
 }
+
+// ── did:web helpers ──────────────────────────────────────────────────
+
+/**
+ * Convert a `did:web` identifier to its HTTPS resolution URL.
+ *
+ * Follows the did:web Method Specification:
+ * - `did:web:example.com` → `https://example.com/.well-known/did.json`
+ * - `did:web:example.com:agents:myagent` → `https://example.com/agents/myagent/did.json`
+ *
+ * Percent-encoded characters in the DID are decoded for the URL path.
+ */
+export function didWebToUrl(didWeb: string): string {
+  if (!didWeb.startsWith("did:web:")) {
+    throw new Error(`Invalid did:web format: ${didWeb}`);
+  }
+
+  const specificId = didWeb.slice("did:web:".length);
+  const parts = specificId.split(":");
+
+  // First segment is the domain (percent-decoded).
+  const domain = decodeURIComponent(parts[0]);
+
+  if (parts.length === 1) {
+    return `https://${domain}/.well-known/did.json`;
+  }
+
+  const path = parts.slice(1).map((p) => decodeURIComponent(p)).join("/");
+  return `https://${domain}/${path}/did.json`;
+}
+
+/**
+ * Convert an HTTPS URL to a `did:web` identifier (reverse of `didWebToUrl`).
+ *
+ * The URL must use `https://` and end with `did.json`.
+ */
+export function urlToDidWeb(url: string): string {
+  if (!url.startsWith("https://")) {
+    throw new Error(`did:web URLs must use HTTPS: ${url}`);
+  }
+
+  const rest = url.slice("https://".length);
+  const slashIdx = rest.indexOf("/");
+  if (slashIdx === -1) {
+    throw new Error(`URL missing path component: ${url}`);
+  }
+
+  const domain = rest.slice(0, slashIdx);
+  const path = rest.slice(slashIdx + 1);
+
+  const encodedDomain = encodeURIComponent(domain);
+
+  if (path === ".well-known/did.json") {
+    return `did:web:${encodedDomain}`;
+  }
+
+  if (!path.endsWith("/did.json")) {
+    throw new Error(`URL path must end with /did.json: ${url}`);
+  }
+
+  const pathPart = path.slice(0, -"/did.json".length);
+  const segments = pathPart.split("/").map((s) => encodeURIComponent(s));
+  return `did:web:${encodedDomain}:${segments.join(":")}`;
+}

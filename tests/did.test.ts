@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import basex from "base-x";
-import { peerIdToDIDKey, didKeyToPeerId } from "../src/did.js";
+import { peerIdToDIDKey, didKeyToPeerId, didWebToUrl, urlToDidWeb } from "../src/did.js";
 
 const BASE58_ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 const bs58 = basex(BASE58_ALPHABET);
@@ -106,5 +106,76 @@ describe("round-trip", () => {
     const did = makeDIDKey(pubkey);
     expect(peerIdToDIDKey(peerId)).toBe(did);
     expect(didKeyToPeerId(did)).toBe(peerId);
+  });
+});
+
+describe("didWebToUrl", () => {
+  it("converts domain-only did:web", () => {
+    expect(didWebToUrl("did:web:example.com")).toBe("https://example.com/.well-known/did.json");
+  });
+
+  it("converts did:web with path segments", () => {
+    expect(didWebToUrl("did:web:example.com:agents:myagent")).toBe(
+      "https://example.com/agents/myagent/did.json",
+    );
+  });
+
+  it("handles percent-encoded port", () => {
+    expect(didWebToUrl("did:web:localhost%3A8080")).toBe(
+      "https://localhost:8080/.well-known/did.json",
+    );
+  });
+
+  it("handles port with path", () => {
+    expect(didWebToUrl("did:web:localhost%3A8080:api:v1")).toBe(
+      "https://localhost:8080/api/v1/did.json",
+    );
+  });
+
+  it("rejects invalid prefix", () => {
+    expect(() => didWebToUrl("did:key:zSomething")).toThrow("Invalid did:web format");
+  });
+});
+
+describe("urlToDidWeb", () => {
+  it("converts domain-only URL", () => {
+    expect(urlToDidWeb("https://example.com/.well-known/did.json")).toBe("did:web:example.com");
+  });
+
+  it("converts URL with path", () => {
+    expect(urlToDidWeb("https://example.com/agents/myagent/did.json")).toBe(
+      "did:web:example.com:agents:myagent",
+    );
+  });
+
+  it("handles URL with port", () => {
+    expect(urlToDidWeb("https://localhost:8080/.well-known/did.json")).toBe(
+      "did:web:localhost%3A8080",
+    );
+  });
+
+  it("rejects non-HTTPS", () => {
+    expect(() => urlToDidWeb("http://example.com/.well-known/did.json")).toThrow("HTTPS");
+  });
+
+  it("rejects bad path", () => {
+    expect(() => urlToDidWeb("https://example.com/random/path")).toThrow("did.json");
+  });
+});
+
+describe("did:web round-trip", () => {
+  it("domain-only round-trips", () => {
+    const did = "did:web:example.com";
+    expect(urlToDidWeb(didWebToUrl(did))).toBe(did);
+  });
+
+  it("path-based round-trips", () => {
+    const did = "did:web:example.com:agents:myagent";
+    expect(urlToDidWeb(didWebToUrl(did))).toBe(did);
+  });
+
+  it("port round-trips", () => {
+    const did = "did:web:localhost%3A8080";
+    expect(urlToDidWeb(didWebToUrl(did))).toBe(did);
   });
 });

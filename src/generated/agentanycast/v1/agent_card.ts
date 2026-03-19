@@ -51,6 +51,12 @@ export interface P2PExtension {
    * DID-based ecosystems such as ANP.
    */
   didKey: string;
+  /** Optional did:web identifier for HTTPS-based DID resolution. */
+  didWeb: string;
+  /** Optional did:dns domain for DNS-based DID resolution. */
+  didDns: string;
+  /** JSON-encoded Verifiable Credentials associated with this agent. */
+  verifiableCredentials: string[];
 }
 
 function createBaseAgentCard(): AgentCard {
@@ -320,7 +326,7 @@ export const Skill: MessageFns<Skill> = {
 };
 
 function createBaseP2PExtension(): P2PExtension {
-  return { peerId: "", supportedTransports: [], relayAddresses: [], didKey: "" };
+  return { peerId: "", supportedTransports: [], relayAddresses: [], didKey: "", didWeb: "", didDns: "", verifiableCredentials: [] };
 }
 
 export const P2PExtension: MessageFns<P2PExtension> = {
@@ -336,6 +342,15 @@ export const P2PExtension: MessageFns<P2PExtension> = {
     }
     if (message.didKey !== "") {
       writer.uint32(34).string(message.didKey);
+    }
+    if (message.didWeb !== "") {
+      writer.uint32(42).string(message.didWeb);
+    }
+    if (message.didDns !== "") {
+      writer.uint32(50).string(message.didDns);
+    }
+    for (const v of message.verifiableCredentials) {
+      writer.uint32(58).string(v!);
     }
     return writer;
   },
@@ -379,6 +394,30 @@ export const P2PExtension: MessageFns<P2PExtension> = {
           message.didKey = reader.string();
           continue;
         }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.didWeb = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.didDns = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.verifiableCredentials.push(reader.string());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -410,6 +449,21 @@ export const P2PExtension: MessageFns<P2PExtension> = {
         : isSet(object.did_key)
         ? globalThis.String(object.did_key)
         : "",
+      didWeb: isSet(object.didWeb)
+        ? globalThis.String(object.didWeb)
+        : isSet(object.did_web)
+        ? globalThis.String(object.did_web)
+        : "",
+      didDns: isSet(object.didDns)
+        ? globalThis.String(object.didDns)
+        : isSet(object.did_dns)
+        ? globalThis.String(object.did_dns)
+        : "",
+      verifiableCredentials: globalThis.Array.isArray(object?.verifiableCredentials)
+        ? object.verifiableCredentials.map((e: any) => globalThis.String(e))
+        : globalThis.Array.isArray(object?.verifiable_credentials)
+        ? object.verifiable_credentials.map((e: any) => globalThis.String(e))
+        : [],
     };
   },
 
@@ -427,6 +481,15 @@ export const P2PExtension: MessageFns<P2PExtension> = {
     if (message.didKey !== "") {
       obj.didKey = message.didKey;
     }
+    if (message.didWeb !== "") {
+      obj.didWeb = message.didWeb;
+    }
+    if (message.didDns !== "") {
+      obj.didDns = message.didDns;
+    }
+    if (message.verifiableCredentials?.length) {
+      obj.verifiableCredentials = message.verifiableCredentials;
+    }
     return obj;
   },
 
@@ -439,6 +502,9 @@ export const P2PExtension: MessageFns<P2PExtension> = {
     message.supportedTransports = object.supportedTransports?.map((e) => e) || [];
     message.relayAddresses = object.relayAddresses?.map((e) => e) || [];
     message.didKey = object.didKey ?? "";
+    message.didWeb = object.didWeb ?? "";
+    message.didDns = object.didDns ?? "";
+    message.verifiableCredentials = object.verifiableCredentials?.map((e) => e) || [];
     return message;
   },
 };
