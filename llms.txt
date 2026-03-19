@@ -1,26 +1,19 @@
 # AgentAnycast TypeScript SDK
 
-> TypeScript SDK for AgentAnycast — the decentralized P2P runtime for the A2A (Agent-to-Agent) protocol. Build P2P agents with Node.js 18+, ES2022 modules, and full type safety.
+> TypeScript SDK for AgentAnycast — the decentralized P2P runtime for the A2A (Agent-to-Agent) protocol. Node.js 18+, ES2022, full type safety, MCP bridging, DID identity.
 
-## Documentation
-
-- [Getting Started](https://github.com/AgentAnycast/agentanycast/blob/main/docs/getting-started.md): Install and run your first P2P agent in 5 minutes
-- [Architecture](https://github.com/AgentAnycast/agentanycast/blob/main/docs/architecture.md): Sidecar daemon + SDK design
-- [Examples](https://github.com/AgentAnycast/agentanycast/blob/main/docs/examples.md): MCP tool mapping, streaming
-- [Protocol Reference](https://github.com/AgentAnycast/agentanycast/blob/main/docs/protocol.md): Wire format, task lifecycle, 16 gRPC RPCs
-
-## Quick Install
+## Install
 
 ```bash
 npm install agentanycast
 
-# Skip daemon binary download (CI or custom binary path)
+# Skip daemon binary download (CI or custom binary)
 AGENTANYCAST_SKIP_DOWNLOAD=1 npm install agentanycast
 ```
 
-## Key APIs
+The Go daemon binary is auto-downloaded via postinstall. Set `AGENTANYCAST_SKIP_DOWNLOAD=1` to skip.
 
-### Node — main entry point
+## Node — Core API
 
 ```typescript
 import { Node } from "agentanycast";
@@ -28,64 +21,92 @@ import { Node } from "agentanycast";
 const node = new Node({
   card: {
     name: "MyAgent",
-    skills: [{ id: "echo", description: "Echo service" }],
+    description: "Helpful assistant",
+    skills: [{ id: "qa", description: "Answer questions" }],
   },
+  relay: "/ip4/.../p2p/12D3KooW...",
 });
 
 await node.start();
 
 node.onTask(async (task) => {
-  const userMsg = task.messages.at(-1)?.parts[0]?.text ?? "";
-  await task.complete([{ parts: [{ text: `Echo: ${userMsg}` }] }]);
+  const text = task.messages.at(-1)?.parts[0]?.text ?? "";
+  await task.updateStatus("working");
+  await task.complete([{ parts: [{ text: `Answer: ${text}` }] }]);
 });
 
 await node.serveForever();
+// Call node.stop() to shut down.
 ```
 
-### Three addressing modes for sendTask
+NodeOptions: `card`, `relay`, `keyPath`, `daemonAddr`, `daemonPath`, `home`.
+
+## IncomingTask — Server-Side
+
+- `task.taskId`, `task.peerId`, `task.messages`, `task.targetSkillId`, `task.senderCard`
+- `await task.updateStatus("working")` — update status
+- `await task.complete(artifacts)` — mark completed
+- `await task.fail("error")` — mark failed
+- `await task.requestInput(message)` — request more input
+
+## Three sendTask Modes
 
 ```typescript
-// Direct — known peer
-const result = await node.sendTask({ peerId: "12D3KooW...", message: "Hello" });
+const msg = { role: "user" as const, parts: [{ text: "Hello" }] };
 
-// Anycast — skill-based routing
-const result = await node.sendTask({ skill: "translate", message: "Hello" });
-
-// HTTP Bridge — standard A2A endpoint
-const result = await node.sendTask({ url: "https://agent.example.com", message: "Hello" });
+const h1 = await node.sendTask(msg, { peerId: "12D3KooW..." });   // Direct
+const h2 = await node.sendTask(msg, { skill: "translate" });       // Anycast
+const h3 = await node.sendTask(msg, { url: "https://a.example" }); // HTTP Bridge
 ```
 
-### MCP bridging
+## TaskHandle — Client-Side
 
 ```typescript
-import { mcpToolToSkill, skillToMcpTool } from "agentanycast";
+const handle = await node.sendTask(msg, { skill: "translate" });
+const result = await handle.wait();       // Block until done
+console.log(handle.status);               // TaskStatus enum
+console.log(handle.artifacts[0].parts[0].text);
+await handle.cancel();
+```
 
-const skill = mcpToolToSkill(mcpTool);
+## Discovery
+
+```typescript
+const agents = await node.discover("translate", { tags: { lang: "en" }, limit: 10 });
+agents.forEach((a) => console.log(a.peerId, a.agentName));
+```
+
+## MCP Bridging
+
+```typescript
+import { mcpToolToSkill, skillToMcpTool, mcpToolsToAgentCard } from "agentanycast";
+
+const skill = mcpToolToSkill({ name: "get_weather", description: "Get weather" });
 const tool = skillToMcpTool(skill);
+const card = mcpToolsToAgentCard("WeatherServer", [tool], { description: "Weather tools" });
 ```
 
-### DID identity
+## DID Identity
 
 ```typescript
 import { peerIdToDidKey, didKeyToPeerId } from "agentanycast";
 
-const did = peerIdToDidKey("12D3KooW...");
-const peerId = didKeyToPeerId("did:key:z6Mk...");
+const did = peerIdToDidKey("12D3KooW...");        // -> "did:key:z6Mk..."
+const peerId = didKeyToPeerId("did:key:z6Mk..."); // -> "12D3KooW..."
 ```
 
 ## Key Concepts
 
 - **Sidecar daemon**: Go binary auto-downloaded via postinstall; SDK communicates via gRPC over Unix socket
-- **AgentCard**: Declares agent identity, skills, and capabilities (A2A standard)
-- **IncomingTask**: Server-side task handle with `complete()`, `fail()`, `update()`, `sendArtifact()`
-- **TaskHandle**: Client-side handle returned by `sendTask()` with status and result access
+- **AgentCard**: A2A-standard agent identity with name, skills, and P2P extensions (peerId, didKey)
 - **Streaming**: Chunked artifact delivery for large payloads
-- **18 error classes**: Typed exception hierarchy in `exceptions.ts`
+- **18 error classes**: Typed exception hierarchy (AgentAnycastError base class)
+- **Noise_XX**: All peer connections are end-to-end encrypted
 
 ## Related Repositories
 
-- [agentanycast](https://github.com/AgentAnycast/agentanycast): Documentation hub
-- [agentanycast-python](https://github.com/AgentAnycast/agentanycast-python): Python SDK
-- [agentanycast-node](https://github.com/AgentAnycast/agentanycast-node): Go daemon
-- [agentanycast-relay](https://github.com/AgentAnycast/agentanycast-relay): Relay server
-- [agentanycast-proto](https://github.com/AgentAnycast/agentanycast-proto): Protobuf definitions
+- [agentanycast](https://github.com/AgentAnycast/agentanycast) — Docs and issue tracker
+- [agentanycast-python](https://github.com/AgentAnycast/agentanycast-python) — Python SDK
+- [agentanycast-node](https://github.com/AgentAnycast/agentanycast-node) — Go daemon
+- [agentanycast-relay](https://github.com/AgentAnycast/agentanycast-relay) — Relay server
+- [agentanycast-proto](https://github.com/AgentAnycast/agentanycast-proto) — Protobuf definitions
