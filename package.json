@@ -6,7 +6,11 @@
   "homepage": "https://github.com/AgentAnycast/agentanycast",
   "repository": {
     "type": "git",
-    "url": "https://github.com/AgentAnycast/agentanycast-ts"
+    "url": "git+https://github.com/AgentAnycast/agentanycast-ts.git"
+  },
+  "publishConfig": {
+    "provenance": true,
+    "access": "public"
   },
   "bugs": {
     "url": "https://github.com/AgentAnycast/agentanycast/issues"
