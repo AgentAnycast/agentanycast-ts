@@ -10,6 +10,10 @@ Please see the [Contributing Guide](https://github.com/AgentAnycast/agentanycast
 - Cross-repository changes
 - DCO sign-off requirements
 
+## CLA
+
+All contributions require a [Contributor License Agreement (CLA)](https://github.com/AgentAnycast/agentanycast/blob/main/CLA.md) signature. A bot will guide you through this on your first pull request.
+
 ## TypeScript SDK-Specific Guidelines
 
 - Run `npm run build` to verify the project compiles

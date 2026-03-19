@@ -1,0 +1,110 @@
+# AgentAnycast TypeScript SDK
+
+TypeScript SDK for the AgentAnycast P2P runtime. Communicates with the Go sidecar daemon via gRPC over Unix domain socket.
+
+## Architecture
+
+- Thin SDK layer: all P2P networking happens in the Go daemon (`agentanycastd`)
+- SDK manages daemon lifecycle (find, download, start, health check, stop) automatically
+- Node.js 18+, ES2022 target and module system
+- gRPC stubs are pre-generated from agentanycast-proto and committed in `generated/`
+
+## Directory Structure
+
+```
+src/
+  index.ts           # Public re-exports
+  node.ts            # Node class — main API (start, sendTask, onTask, discover, serveForever, stop)
+  daemon.ts          # DaemonManager — find/download/start/health check/stop daemon binary
+  grpc-client.ts     # gRPC client wrapper with proto <-> SDK type converters
+  card.ts            # AgentCard, Skill interfaces + A2A JSON serialization
+  task.ts            # TaskHandle (client), IncomingTask (server), TaskStatus, Message, Artifact, Part
+  did.ts             # PeerID <-> did:key conversion (pure JS, no native deps)
+  mcp.ts             # MCP Tool <-> A2A Skill mapping
+  exceptions.ts      # 18 error classes in hierarchy
+  generated/         # Pre-generated protobuf stubs (committed, do not edit)
+tests/
+scripts/
+  download-daemon.ts # Postinstall script for daemon binary download
+```
+
+## Common Patterns
+
+### Basic agent server
+
+```typescript
+import { Node } from "agentanycast";
+
+const node = new Node({
+  card: {
+    name: "MyAgent",
+    skills: [{ id: "echo", description: "Echo" }],
+  },
+});
+
+await node.start();
+node.onTask(async (task) => {
+  const text = task.messages.at(-1)?.parts[0]?.text ?? "";
+  await task.complete([{ parts: [{ text }] }]);
+});
+await node.serveForever();
+```
+
+### Sending tasks
+
+```typescript
+const result = await node.sendTask({ peerId: "12D3KooW...", message: "Hello" });
+const result = await node.sendTask({ skill: "translate", message: "Translate this" });
+const result = await node.sendTask({ url: "https://agent.example.com", message: "Hello" });
+```
+
+### MCP bridging
+
+```typescript
+import { mcpToolToSkill, skillToMcpTool } from "agentanycast";
+
+const skill = mcpToolToSkill(mcpTool);
+const tool = skillToMcpTool(skill);
+```
+
+### Error handling
+
+```typescript
+import { AgentAnycastError, ConnectionError, TaskError } from "agentanycast";
+
+try {
+  await node.sendTask({ skill: "translate", message: "Hello" });
+} catch (err) {
+  if (err instanceof ConnectionError) { /* peer unreachable */ }
+  if (err instanceof TaskError) { /* task failed */ }
+}
+```
+
+## Code Style
+
+- TypeScript 5.5, strict mode (noImplicitAny: false)
+- ES2022 target/module, Node.js 18+
+- 2-space indentation, LF line endings
+- Testing: Vitest 3.0
+- Linting: ESLint 9.0
+- Dependencies: @grpc/grpc-js, @bufbuild/protobuf, base-x
+
+## Build & Test
+
+```bash
+npm run build    # Compile TypeScript -> dist/ with source maps
+npm test         # Run vitest suite
+npm run lint     # ESLint on src/ and tests/
+npm run clean    # Remove dist/
+```
+
+## Key Types
+
+- `Node` — main class; manages daemon, exposes sendTask/onTask/discover
+- `AgentCard` — agent identity + skills declaration (interface)
+- `Skill` — single capability: id, description, inputSchema, outputSchema
+- `IncomingTask` — server-side task with complete/fail/update/sendArtifact
+- `TaskHandle` — client-side task result with status/artifacts
+- `Message` — contains Part[] (TextPart, DataPart, FilePart)
+- `Artifact` — output container with parts and metadata
+- `TaskStatus` — enum: submitted, working, completed, failed, canceled

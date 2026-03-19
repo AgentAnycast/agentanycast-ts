@@ -1,0 +1,91 @@
+# AgentAnycast TypeScript SDK
+
+> TypeScript SDK for AgentAnycast — the decentralized P2P runtime for the A2A (Agent-to-Agent) protocol. Build P2P agents with Node.js 18+, ES2022 modules, and full type safety.
+
+## Documentation
+
+- [Getting Started](https://github.com/AgentAnycast/agentanycast/blob/main/docs/getting-started.md): Install and run your first P2P agent in 5 minutes
+- [Architecture](https://github.com/AgentAnycast/agentanycast/blob/main/docs/architecture.md): Sidecar daemon + SDK design
+- [Examples](https://github.com/AgentAnycast/agentanycast/blob/main/docs/examples.md): MCP tool mapping, streaming
+- [Protocol Reference](https://github.com/AgentAnycast/agentanycast/blob/main/docs/protocol.md): Wire format, task lifecycle, 16 gRPC RPCs
+
+## Quick Install
+
+```bash
+npm install agentanycast
+
+# Skip daemon binary download (CI or custom binary path)
+AGENTANYCAST_SKIP_DOWNLOAD=1 npm install agentanycast
+```
+
+## Key APIs
+
+### Node — main entry point
+
+```typescript
+import { Node } from "agentanycast";
+
+const node = new Node({
+  card: {
+    name: "MyAgent",
+    skills: [{ id: "echo", description: "Echo service" }],
+  },
+});
+
+await node.start();
+
+node.onTask(async (task) => {
+  const userMsg = task.messages.at(-1)?.parts[0]?.text ?? "";
+  await task.complete([{ parts: [{ text: `Echo: ${userMsg}` }] }]);
+});
+
+await node.serveForever();
+```
+
+### Three addressing modes for sendTask
+
+```typescript
+// Direct — known peer
+const result = await node.sendTask({ peerId: "12D3KooW...", message: "Hello" });
+
+// Anycast — skill-based routing
+const result = await node.sendTask({ skill: "translate", message: "Hello" });
+
+// HTTP Bridge — standard A2A endpoint
+const result = await node.sendTask({ url: "https://agent.example.com", message: "Hello" });
+```
+
+### MCP bridging
+
+```typescript
+import { mcpToolToSkill, skillToMcpTool } from "agentanycast";
+
+const skill = mcpToolToSkill(mcpTool);
+const tool = skillToMcpTool(skill);
+```
+
+### DID identity
+
+```typescript
+import { peerIdToDidKey, didKeyToPeerId } from "agentanycast";
+
+const did = peerIdToDidKey("12D3KooW...");
+const peerId = didKeyToPeerId("did:key:z6Mk...");
+```
+
+## Key Concepts
+
+- **Sidecar daemon**: Go binary auto-downloaded via postinstall; SDK communicates via gRPC over Unix socket
+- **AgentCard**: Declares agent identity, skills, and capabilities (A2A standard)
+- **IncomingTask**: Server-side task handle with `complete()`, `fail()`, `update()`, `sendArtifact()`
+- **TaskHandle**: Client-side handle returned by `sendTask()` with status and result access
+- **Streaming**: Chunked artifact delivery for large payloads
+- **18 error classes**: Typed exception hierarchy in `exceptions.ts`
+
+## Related Repositories
+
+- [agentanycast](https://github.com/AgentAnycast/agentanycast): Documentation hub
+- [agentanycast-python](https://github.com/AgentAnycast/agentanycast-python): Python SDK
+- [agentanycast-node](https://github.com/AgentAnycast/agentanycast-node): Go daemon
+- [agentanycast-relay](https://github.com/AgentAnycast/agentanycast-relay): Relay server
+- [agentanycast-proto](https://github.com/AgentAnycast/agentanycast-proto): Protobuf definitions

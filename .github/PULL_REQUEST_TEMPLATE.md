@@ -14,12 +14,13 @@ Fixes AgentAnycast/agentanycast#
 
 ## Testing
 
-- [ ] `npm run build` passes
-- [ ] `npm test` passes
+- [ ] `ruff check .` passes
+- [ ] `ruff format --check .` passes
+- [ ] `pytest tests/ -v` passes
 - [ ] Manually verified (if applicable)
 
 ## Checklist
 
-- [ ] Type annotations on all public APIs
+- [ ] Type hints on all public APIs
 - [ ] Self-reviewed the diff
 - [ ] Updated documentation (if applicable)

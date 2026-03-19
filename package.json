@@ -12,15 +12,26 @@
     "provenance": true,
     "access": "public"
   },
+  "mcpName": "io.github.agentanycast/agentanycast",
   "bugs": {
     "url": "https://github.com/AgentAnycast/agentanycast/issues"
   },
   "keywords": [
     "a2a",
+    "a2a-protocol",
     "agent",
+    "agent-communication",
     "p2p",
     "libp2p",
-    "grpc"
+    "grpc",
+    "mcp",
+    "zero-config",
+    "end-to-end-encryption",
+    "nat-traversal",
+    "decentralized",
+    "noise-protocol",
+    "typescript",
+    "nodejs"
   ],
   "type": "module",
   "main": "dist/index.js",
