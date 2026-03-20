@@ -147,10 +147,16 @@ export function didWebToUrl(didWeb: string): string {
   }
 
   const specificId = didWeb.slice("did:web:".length);
+  if (!specificId) {
+    throw new Error("did:web identifier has empty domain");
+  }
   const parts = specificId.split(":");
 
   // First segment is the domain (percent-decoded).
   const domain = decodeURIComponent(parts[0]);
+  if (!domain) {
+    throw new Error("did:web identifier has empty domain");
+  }
 
   if (parts.length === 1) {
     return `https://${domain}/.well-known/did.json`;

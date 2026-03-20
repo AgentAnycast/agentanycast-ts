@@ -135,6 +135,10 @@ describe("didWebToUrl", () => {
   it("rejects invalid prefix", () => {
     expect(() => didWebToUrl("did:key:zSomething")).toThrow("Invalid did:web format");
   });
+
+  it("rejects empty domain (bare prefix)", () => {
+    expect(() => didWebToUrl("did:web:")).toThrow("empty domain");
+  });
 });
 
 describe("urlToDidWeb", () => {

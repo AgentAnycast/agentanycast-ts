@@ -52,10 +52,49 @@ describe("AgentCard", () => {
     expect(p2p.did_key).toBe("did:key:zTest");
   });
 
-  it("omits P2P extension when peerId is not set", () => {
+  it("omits P2P extension when no P2P fields are set", () => {
     const card: AgentCard = { name: "Simple", skills: [] };
     const d = agentCardToDict(card);
     expect(d.agentanycast).toBeUndefined();
+  });
+
+  it("includes P2P extension when didKey is set but peerId is not", () => {
+    const card: AgentCard = {
+      name: "DIDOnly",
+      skills: [{ id: "echo", description: "Echo back" }],
+      didKey: "did:key:z6MkTest",
+    };
+    const d = agentCardToDict(card);
+    const p2p = d.agentanycast as Record<string, unknown>;
+    expect(p2p).toBeDefined();
+    expect(p2p.did_key).toBe("did:key:z6MkTest");
+    expect(p2p.peer_id).toBeUndefined();
+  });
+
+  it("includes P2P extension when only didWeb is set", () => {
+    const card: AgentCard = {
+      name: "WebDID",
+      skills: [],
+      didWeb: "did:web:example.com",
+    };
+    const d = agentCardToDict(card);
+    const p2p = d.agentanycast as Record<string, unknown>;
+    expect(p2p).toBeDefined();
+    expect(p2p.did_web).toBe("did:web:example.com");
+    expect(p2p.peer_id).toBeUndefined();
+    expect(p2p.did_key).toBeUndefined();
+  });
+
+  it("includes P2P extension when only didDns is set", () => {
+    const card: AgentCard = {
+      name: "DnsDID",
+      skills: [],
+      didDns: "did:dns:example.com",
+    };
+    const d = agentCardToDict(card);
+    const p2p = d.agentanycast as Record<string, unknown>;
+    expect(p2p).toBeDefined();
+    expect(p2p.did_dns).toBe("did:dns:example.com");
   });
 
   it("serializes v0.5 identity fields", () => {

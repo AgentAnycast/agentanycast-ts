@@ -2,23 +2,42 @@
 
 /** Describes a single capability an agent exposes. */
 export interface Skill {
+  /** Unique identifier for the skill (e.g. "analyze_csv", "summarize"). */
   id: string;
+  /** Human-readable description of what this skill does. */
   description: string;
+  /** Optional JSON Schema describing the expected input format. */
   inputSchema?: string;
+  /** Optional JSON Schema describing the output format. */
   outputSchema?: string;
 }
 
-/** A2A-compatible capability descriptor for an agent node. */
+/**
+ * A2A-compatible capability descriptor for an agent node.
+ *
+ * Standard A2A fields are preserved. The P2P extension fields (peerId,
+ * supportedTransports, relayAddresses, DID fields) are populated
+ * automatically by the daemon after node startup.
+ */
 export interface AgentCard {
+  /** Display name of the agent. */
   name: string;
+  /** Human-readable description of the agent's purpose. */
   description?: string;
+  /** Semantic version of the agent implementation (default "1.0.0"). */
   version?: string;
+  /** A2A protocol version this agent conforms to (default "a2a/0.3"). */
   protocolVersion?: string;
+  /** Skills (capabilities) this agent exposes for discovery and routing. */
   skills: Skill[];
 
-  // P2P extension (populated by daemon)
+  // ── P2P extension (populated by daemon) ──────────────────────────
+
+  /** libp2p PeerID (base58btc-encoded). Set by the daemon after startup. */
   peerId?: string;
+  /** Transport protocols supported by this node (e.g. ["tcp", "quic"]). */
   supportedTransports?: string[];
+  /** Relay server multiaddrs this node is reachable through. */
   relayAddresses?: string[];
   /** W3C DID (did:key) derived from the node's Ed25519 public key. */
   didKey?: string;
@@ -44,12 +63,12 @@ export function agentCardToDict(card: AgentCard): Record<string, unknown> {
       return sd;
     }),
   };
-  if (card.peerId) {
-    const p2p: Record<string, unknown> = {
-      peer_id: card.peerId,
-      supported_transports: card.supportedTransports ?? [],
-      relay_addresses: card.relayAddresses ?? [],
-    };
+  const hasP2p = card.peerId || card.didKey || card.didWeb || card.didDns;
+  if (hasP2p) {
+    const p2p: Record<string, unknown> = {};
+    if (card.peerId) p2p.peer_id = card.peerId;
+    if (card.supportedTransports?.length) p2p.supported_transports = card.supportedTransports;
+    if (card.relayAddresses?.length) p2p.relay_addresses = card.relayAddresses;
     if (card.didKey) p2p.did_key = card.didKey;
     if (card.didWeb) p2p.did_web = card.didWeb;
     if (card.didDns) p2p.did_dns = card.didDns;
