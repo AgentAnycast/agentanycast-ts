@@ -21,6 +21,7 @@ import {
   protoCardToSdk,
   protoTaskToSdk,
   type DiscoveredAgent,
+  type PeerInfo,
 } from "./grpc-client.js";
 import type { Artifact, IncomingTask, Message } from "./task.js";
 import { TaskHandle, TaskStatus } from "./task.js";
@@ -170,6 +171,18 @@ export class Node {
   async getCard(peerId: string): Promise<AgentCard> {
     this._ensureRunning();
     return this._grpc!.getPeerCard(peerId);
+  }
+
+  /** Connect to a remote peer by PeerID. */
+  async connectPeer(peerId: string, addresses?: string[]): Promise<PeerInfo> {
+    this._ensureRunning();
+    return this._grpc!.connectPeer(peerId, addresses);
+  }
+
+  /** List all currently connected peers. */
+  async listPeers(): Promise<PeerInfo[]> {
+    this._ensureRunning();
+    return this._grpc!.listPeers();
   }
 
   /**
