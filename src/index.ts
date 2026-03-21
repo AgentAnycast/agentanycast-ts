@@ -20,7 +20,7 @@ export {
   type Part,
 } from "./task.js";
 export { DaemonManager, type DaemonManagerOptions } from "./daemon.js";
-export { GrpcClient, type NodeInfo, type DiscoveredAgent } from "./grpc-client.js";
+export { GrpcClient, type NodeInfo, type PeerInfo, type DiscoveredAgent } from "./grpc-client.js";
 export { peerIdToDIDKey, didKeyToPeerId, didWebToUrl, urlToDidWeb } from "./did.js";
 export { type MCPTool, mcpToolToSkill, skillToMcpTool, mcpToolsToAgentCard } from "./mcp.js";
 
