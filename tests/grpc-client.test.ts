@@ -15,7 +15,6 @@ import type {
   Task as ProtoTask,
   Message as ProtoMessage,
   Artifact as ProtoArtifact,
-  Part as ProtoPart,
 } from "../src/generated/agentanycast/v1/a2a_models.js";
 import { MessageRole } from "../src/generated/agentanycast/v1/a2a_models.js";
 import type { AgentCard as ProtoAgentCard } from "../src/generated/agentanycast/v1/agent_card.js";

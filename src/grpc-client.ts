@@ -7,7 +7,7 @@
 
 import { credentials, type ServiceError, status } from "@grpc/grpc-js";
 import type { ClientReadableStream } from "@grpc/grpc-js";
-import type { AgentCard, Skill } from "./card.js";
+import type { AgentCard } from "./card.js";
 import {
   CardNotAvailableError,
   DaemonConnectionError,
@@ -37,9 +37,7 @@ import type {
   GetTaskRequest,
   CancelTaskRequest,
   CancelTaskResponse,
-  SubscribeTaskUpdatesRequest,
   SubscribeTaskUpdatesResponse,
-  SubscribeIncomingTasksRequest,
   SubscribeIncomingTasksResponse,
   UpdateTaskStatusRequest,
   CompleteTaskRequest,

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { agentCardToDict, agentCardFromDict, type AgentCard, type Skill } from "../src/card.js";
+import { agentCardToDict, agentCardFromDict, type AgentCard } from "../src/card.js";
 
 describe("AgentCard", () => {
   it("serializes basic card to dict", () => {

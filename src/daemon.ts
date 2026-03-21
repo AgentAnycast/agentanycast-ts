@@ -227,7 +227,6 @@ export class DaemonManager {
 
       try {
         if (existsSync(this.sockPath)) {
-          // eslint-disable-next-line @typescript-eslint/no-floating-promises
           unlink(this.sockPath).catch(() => {});
         }
       } catch {
