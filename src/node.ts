@@ -263,7 +263,7 @@ export class Node {
   }
 
   /** Subscribe to status updates for a sent task. */
-  private _subscribeUpdates(taskId: string, handle: TaskHandle): void {
+  private _subscribeUpdates(taskId: string, handle: TaskHandle, attempt = 0): void {
     const stream = this._grpc!.subscribeTaskUpdates(taskId);
 
     stream.on("data", (resp) => {
@@ -274,8 +274,15 @@ export class Node {
       }
     });
 
-    stream.on("error", () => {
-      // Stream ended — task may have completed already.
+    stream.on("error", (err: Error & { code?: number }) => {
+      // gRPC CANCELLED (code 1) means we stopped intentionally.
+      if (err.code === 1) return;
+
+      // Retry with exponential backoff if the node is still running.
+      if (attempt < 3 && this._running) {
+        const delay = Math.pow(2, attempt) * 1000;
+        setTimeout(() => this._subscribeUpdates(taskId, handle, attempt + 1), delay);
+      }
     });
   }
 
