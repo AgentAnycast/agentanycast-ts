@@ -1,6 +1,6 @@
 {
   "name": "agentanycast",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "TypeScript SDK for AgentAnycast — A2A protocol over P2P",
   "license": "Apache-2.0",
   "homepage": "https://github.com/AgentAnycast/agentanycast",
@@ -59,7 +59,7 @@
     "base-x": "^5.0.0"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
+    "@eslint/js": "^9.39.4",
     "@types/node": "^20.0.0",
     "eslint": "^9.0.0",
     "typescript": "^5.5.0",
