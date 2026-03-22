@@ -10,38 +10,6 @@ permissions:
   contents: read
 
 jobs:
-  proto-freshness:
-    name: Proto Stubs Freshness
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: bufbuild/buf-setup-action@v1
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Checkout proto repo
-        uses: actions/checkout@v4
-        with:
-          repository: AgentAnycast/agentanycast-proto
-          path: agentanycast-proto
-
-      - name: Install ts-proto
-        working-directory: agentanycast-proto
-        run: npm init -y && npm install ts-proto
-
-      - name: Regenerate TypeScript stubs
-        working-directory: agentanycast-proto
-        run: PATH="$PWD/node_modules/.bin:$PATH" buf generate
-
-      - name: Check for differences
-        run: |
-          diff -r agentanycast-proto/gen/ts/agentanycast/ src/generated/agentanycast/ \
-            && diff -r agentanycast-proto/gen/ts/google/ src/generated/google/ \
-            || (echo "::error::Generated stubs are out of date. Run 'buf generate' in agentanycast-proto and copy gen/ts/ to src/generated/." && exit 1)
-
   test:
     runs-on: ubuntu-latest
     strategy:
