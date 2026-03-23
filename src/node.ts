@@ -23,8 +23,11 @@ import {
   type DiscoveredAgent,
   type PeerInfo,
 } from "./grpc-client.js";
+import { createLogger } from "./logger.js";
 import type { Artifact, IncomingTask, Message } from "./task.js";
 import { TaskHandle, TaskStatus } from "./task.js";
+
+const log = createLogger("node");
 
 /** Task handler function type. */
 export type TaskHandler = (task: IncomingTask) => Promise<void>;
@@ -115,6 +118,7 @@ export class Node {
       grpcAddr = this._daemon.grpcAddress;
     }
 
+    log.debug("connecting to daemon at %s", grpcAddr);
     this._grpc = new GrpcClient(grpcAddr!);
     await this._grpc.connect();
     await this._grpc.setAgentCard(this._card);
@@ -122,11 +126,13 @@ export class Node {
     this._peerId = info.peerId;
 
     this._running = true;
+    log.debug("node started — PeerID: %s", this._peerId);
   }
 
   /** Stop the node and clean up resources. */
   async stop(): Promise<void> {
     if (!this._running) return;
+    log.debug("stopping node...");
 
     this._incomingAbort?.abort();
 

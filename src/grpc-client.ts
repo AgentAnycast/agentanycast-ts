@@ -227,6 +227,41 @@ function promisify<TReq, TRes>(
     });
 }
 
+/** gRPC status codes that indicate transient failures worth retrying. */
+const RETRYABLE_CODES = new Set([
+  status.UNAVAILABLE,
+  status.INTERNAL,
+  status.UNKNOWN,
+]);
+
+/**
+ * Retry a unary gRPC call on transient failures with exponential backoff.
+ *
+ * @param fn - A zero-argument function that returns a Promise for the gRPC call.
+ * @param maxRetries - Maximum number of retry attempts (default 3).
+ * @param initialBackoff - Initial backoff delay in ms (default 500).
+ */
+async function retryUnary<T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+  initialBackoff = 500,
+): Promise<T> {
+  let backoff = initialBackoff;
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      const code = (err as ServiceError).code;
+      if (!RETRYABLE_CODES.has(code) || attempt >= maxRetries) throw err;
+      await new Promise((r) => setTimeout(r, backoff));
+      backoff = Math.min(backoff * 2, 10_000);
+    }
+  }
+  throw lastError;
+}
+
 // ── GrpcClient ───────────────────────────────────────────────────────
 
 export interface NodeInfo {
@@ -347,9 +382,9 @@ export class GrpcClient {
   async getPeerCard(peerId: string): Promise<AgentCard> {
     const client = this._ensure();
     try {
-      const resp = await promisify<GetPeerCardRequest, GetPeerCardResponse>(
-        client.getPeerCard, client,
-      )({ peerId });
+      const resp = await retryUnary(() =>
+        promisify<GetPeerCardRequest, GetPeerCardResponse>(client.getPeerCard, client)({ peerId }),
+      );
       return protoCardToSdk(resp.card!);
     } catch (err) {
       const e = err as ServiceError;
@@ -379,9 +414,9 @@ export class GrpcClient {
     else if (target.url) req.target = { $case: "url", url: target.url };
 
     try {
-      const resp = await promisify<SendTaskRequest, SendTaskResponse>(
-        client.sendTask, client,
-      )(req);
+      const resp = await retryUnary(() =>
+        promisify<SendTaskRequest, SendTaskResponse>(client.sendTask, client)(req),
+      );
       return protoTaskToSdk(resp.task!);
     } catch (err) {
       const e = err as ServiceError;

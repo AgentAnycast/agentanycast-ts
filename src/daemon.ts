@@ -14,6 +14,9 @@ import { join } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
 import { DaemonConnectionError, DaemonNotFoundError, DaemonStartError } from "./exceptions.js";
+import { createLogger } from "./logger.js";
+
+const log = createLogger("daemon");
 
 const RELEASE_URL =
   "https://github.com/agentanycast/agentanycast-node/releases/download/" +
@@ -171,6 +174,7 @@ export class DaemonManager {
     }
 
     const binary = await this.ensureBinary();
+    log.debug("starting daemon: %s", binary);
     await mkdir(this._logDir, { recursive: true });
 
     const logFile = join(this._logDir, "daemon.log");
