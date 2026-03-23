@@ -59,7 +59,7 @@
     "base-x": "^5.0.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.4",
+    "@eslint/js": "^10.0.1",
     "@types/node": "^20.0.0",
     "eslint": "^9.0.0",
     "typescript": "^5.5.0",
